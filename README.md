@@ -1,6 +1,6 @@
-# 格兰云天会议管理系统原型 Workspace
+# 格兰云天会议管理系统 Workspace
 
-当前项目已经拆成 4 个真正独立的前端子项目，使用 `pnpm workspace` 统一管理。
+当前仓库已经清理为纯 workspace 结构，只保留 4 个独立前端子项目和 1 个共享包，不再包含旧的单工程 `src/` 入口。
 
 ## 子项目目录
 
@@ -14,6 +14,14 @@ apps
 packages
 └── shared      # 共用的原型数据、渲染组件与品牌样式
 ```
+
+根目录只保留 workspace 管理所需文件：
+
+- `package.json`
+- `pnpm-workspace.yaml`
+- `pnpm-lock.yaml`
+- `tsconfig.base.json`
+- `README.md`
 
 ## 安装依赖
 
@@ -58,6 +66,14 @@ pnpm build
 ```
 
 这两个命令会并行校验并构建 `apps/*` 下的四个独立应用。
+
+## 当前保留原则
+
+- `apps/*`：各端独立运行、独立构建
+- `packages/shared`：共用页面数据、预览组件、品牌样式
+- 根目录：仅保留 workspace 管理配置
+
+已删除旧的单工程文件，包括旧 `src/`、根级 `vite.config.ts`、根级 `tsconfig.json`、历史构建产物和旧环境模板。
 
 ## 共享层说明
 

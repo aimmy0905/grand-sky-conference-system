@@ -1,6 +1,5 @@
 stages:
   - test
-  # - deploy
 
 before_script:
   - asdf install
@@ -8,30 +7,10 @@ before_script:
 
 test:
   script:
-    - pnpm run lint
-    - pnpm run lint:ts
+    - pnpm typecheck
+    - pnpm build
   except:
     - vite-vue3-boilerplate
     - develop
     - staging
     - master
-
-# deploy_staging:
-#   stage: deploy
-#   script:
-#     - pnpm staging
-#     - pnpm deploy:staging
-#   only:
-#     - staging
-#   tags:
-#     - nuc-runner
-
-# deploy_production:
-#   stage: deploy
-#   script:
-#     - pnpm build
-#     - pnpm deploy:production
-#   only:
-#     - master
-#   tags:
-#     - nuc-runner
