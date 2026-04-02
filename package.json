@@ -1,0 +1,14 @@
+{
+  "name": "hotel-meeting-prototype",
+  "type": "module",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev:attendee": "pnpm --filter @grand-sky/attendee dev",
+    "dev:verifier": "pnpm --filter @grand-sky/verifier dev",
+    "dev:sales": "pnpm --filter @grand-sky/sales dev",
+    "dev:admin": "pnpm --filter @grand-sky/admin dev",
+    "build": "pnpm -r --filter \"./apps/**\" build",
+    "typecheck": "pnpm -r --filter \"./apps/**\" typecheck"
+  }
+}
