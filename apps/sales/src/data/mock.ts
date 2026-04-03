@@ -75,10 +75,19 @@ export const meetings: SalesMeeting[] = [
   },
 ];
 
-export const participants = [
-  { id: 'p1', name: '张三', mobile: '138****1234', meetingId: 'sm-001' },
-  { id: 'p2', name: '李四', mobile: '139****1231', meetingId: 'sm-001' },
-  { id: 'p3', name: '陈晨', mobile: '136****1288', meetingId: 'sm-001' },
+export type SalesParticipant = {
+  id: string
+  name: string
+  mobile: string
+  meetingId: string
+  signStatus?: '已签到' | '未签到'
+  signTime?: string
+}
+
+export const participants: SalesParticipant[] = [
+  { id: 'p1', name: '张三', mobile: '138****1234', meetingId: 'sm-001', signStatus: '已签到', signTime: '2026-06-01 08:41' },
+  { id: 'p2', name: '李四', mobile: '139****1231', meetingId: 'sm-001', signStatus: '未签到', signTime: '' },
+  { id: 'p3', name: '陈晨', mobile: '136****1288', meetingId: 'sm-001', signStatus: '已签到', signTime: '2026-06-01 08:55' },
 ];
 
 export const materials = [

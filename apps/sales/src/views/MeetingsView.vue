@@ -23,12 +23,12 @@
             <span>签到率 {{ meeting.signRate }}</span>
           </div>
           <div class="actions">
-            <button type="button" @click="toEdit(meeting.id)">编辑</button>
+            <button v-if="meeting.status === '待开始'" type="button" @click="toEdit(meeting.id)">编辑</button>
             <button type="button" @click="toDetail(meeting.id)">会议详情</button>
-            <button type="button" @click="router.push({ path: '/materials', query: { meetingId: meeting.id } })">资料管理</button>
-            <button type="button" @click="router.push({ path: '/message-create', query: { meetingId: meeting.id } })">会议通知</button>
+            <button v-if="meeting.status !== '已结束'" type="button" @click="toMaterials(meeting.id)">资料管理</button>
+            <button v-if="meeting.status !== '已结束'" type="button" @click="toMessages(meeting.id)">会议通知</button>
             <button type="button" @click="showQrCode = true">签到码</button>
-            <button type="button" class="danger" :disabled="meeting.status !== '待开始'" @click="askDelete(meeting.id)">
+            <button v-if="meeting.status === '待开始'" type="button" class="danger" @click="askDelete(meeting.id)">
               删除
             </button>
           </div>
@@ -79,11 +79,31 @@ const deleteMeetingId = ref('');
 const filteredMeetings = computed(() => meetings.filter((item) => item.name.includes(keyword.value.trim())));
 
 const toEdit = (meetingId: string) => {
+  const target = meetings.find((item) => item.id === meetingId);
+  if (!target || target.status !== '待开始') {
+    return;
+  }
   router.push({ path: '/meeting-create', query: { id: meetingId } });
 };
 
 const toDetail = (meetingId: string) => {
   router.push(`/meeting-detail/${meetingId}`);
+};
+
+const toMaterials = (meetingId: string) => {
+  const target = meetings.find((item) => item.id === meetingId);
+  if (!target || target.status === '已结束') {
+    return;
+  }
+  router.push({ path: '/materials', query: { meetingId } });
+};
+
+const toMessages = (meetingId: string) => {
+  const target = meetings.find((item) => item.id === meetingId);
+  if (!target || target.status === '已结束') {
+    return;
+  }
+  router.push({ path: '/message-create', query: { meetingId } });
 };
 
 const askDelete = (meetingId: string) => {
@@ -211,6 +231,7 @@ const confirmDelete = () => {
   color: var(--text-default);
   font-size: 0.76rem;
 }
+
 
 .actions .danger {
   background: #fdeceb;

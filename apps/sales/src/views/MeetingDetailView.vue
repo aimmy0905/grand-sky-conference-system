@@ -18,20 +18,41 @@
         </div>
       </section>
 
-      <section class="card operation-card">
-        <button type="button" @click="openMaterialPanel = true">
+      <section class="state-tip" :class="stateTipTone">
+        <strong>{{ stateTipTitle }}</strong>
+        <p>{{ stateTipDescription }}</p>
+      </section>
+
+      <section v-if="canPublishOrUpload || canManageParticipants" class="card operation-card">
+        <button
+          v-if="canPublishOrUpload"
+          type="button"
+          title="上传会议资料"
+          @click="openMaterialPanelFn"
+        >
           <span class="action-icon"><AppIcon name="material" :size="15" /></span>
           <span>资料上传</span>
         </button>
-        <button type="button" @click="openNoticePanel = true">
+        <button
+          v-if="canPublishOrUpload"
+          type="button"
+          title="发布会议通知"
+          @click="openNoticePanelFn"
+        >
           <span class="action-icon"><AppIcon name="send" :size="15" /></span>
           <span>发布通知</span>
         </button>
-        <button type="button" @click="openParticipantPanel = true">
+        <button
+          v-if="canManageParticipants"
+          type="button"
+          title="录入参会人员"
+          @click="openParticipantPanelFn"
+        >
           <span class="action-icon"><AppIcon name="user" :size="15" /></span>
           <span>录入人员</span>
         </button>
       </section>
+      <p v-if="canPublishOrUpload || canManageParticipants" class="operation-note">{{ operationNote }}</p>
 
       <section class="card">
         <div class="section-head">
@@ -56,7 +77,7 @@
           </div>
           <div class="row-actions">
             <button type="button" class="link-btn">预览</button>
-            <button type="button" class="delete-btn" @click="askDelete('material', item.id)">删除</button>
+            <button v-if="canFullyEdit" type="button" class="delete-btn" @click="askDelete('material', item.id)">删除</button>
           </div>
         </article>
         <p v-if="!filteredMaterials.length" class="empty-text">当前分类暂无资料</p>
@@ -74,10 +95,37 @@
             <p v-if="item.type === 'receipt'" class="receipt-meta">搜集项：{{ item.collectFields.join('、') }}</p>
           </div>
           <div class="row-actions">
-            <button type="button" class="delete-btn" @click="askDelete('notice', item.id)">删除</button>
+            <button v-if="canFullyEdit" type="button" class="delete-btn" @click="askDelete('notice', item.id)">删除</button>
           </div>
         </article>
         <p v-if="!noticeList.length" class="empty-text">当前暂无会议通知</p>
+      </section>
+
+      <section class="card">
+        <div class="section-head">
+          <h3>签到名单</h3>
+          <span>已签到 {{ signedParticipants.length }} 人 / 未签到 {{ unsignedParticipants.length }} 人</span>
+        </div>
+
+        <div class="sign-tabs">
+          <button type="button" :class="{ active: activeSignTab === 'signed' }" @click="activeSignTab = 'signed'">
+            已签到
+          </button>
+          <button type="button" :class="{ active: activeSignTab === 'unsigned' }" @click="activeSignTab = 'unsigned'">
+            未签到
+          </button>
+        </div>
+
+        <article v-for="item in activeSignList" :key="`sign-${item.id}`" class="row-item">
+          <div>
+            <strong>{{ item.name }}</strong>
+            <p>{{ item.mobile }}</p>
+            <p>{{ item.signStatus }}<template v-if="item.signTime"> · {{ item.signTime }}</template></p>
+          </div>
+        </article>
+        <p v-if="!activeSignList.length" class="empty-text">
+          当前暂无{{ activeSignTab === 'signed' ? '已签到' : '未签到' }}人员
+        </p>
       </section>
 
       <section class="card">
@@ -142,7 +190,7 @@
             <p>{{ item.mobile }}</p>
           </div>
           <div class="row-actions">
-            <button type="button" class="delete-btn" @click="askDelete('participant', item.id)">删除</button>
+            <button v-if="canManageParticipants" type="button" class="delete-btn" @click="askDelete('participant', item.id)">删除</button>
           </div>
         </article>
       </section>
@@ -166,7 +214,7 @@
             <span>文件大小</span>
             <input v-model="materialForm.size" type="text" placeholder="如 2.1MB（演示）" />
           </label>
-          <button type="button" class="sheet-btn" :disabled="!materialForm.name.trim()" @click="submitMaterial">确认上传</button>
+          <button type="button" class="sheet-btn" :disabled="!canPublishOrUpload || !materialForm.name.trim()" @click="submitMaterial">确认上传</button>
         </section>
       </div>
     </Transition>
@@ -197,7 +245,7 @@
             <small>回执搜集信息：</small>
             <span v-for="item in sharedReceiptCollectFields" :key="item">{{ item }}</span>
           </div>
-          <button type="button" class="sheet-btn" :disabled="!noticeForm.title.trim() || !noticeForm.content.trim()" @click="submitNotice">
+          <button type="button" class="sheet-btn" :disabled="!canPublishOrUpload || !noticeForm.title.trim() || !noticeForm.content.trim()" @click="submitNotice">
             确认发布
           </button>
         </section>
@@ -216,7 +264,7 @@
             <span>手机号</span>
             <input v-model="participantForm.mobile" type="text" maxlength="11" placeholder="请输入11位手机号" />
           </label>
-          <button type="button" class="sheet-btn" :disabled="!participantValid" @click="submitParticipant">确认录入</button>
+          <button type="button" class="sheet-btn" :disabled="!canManageParticipants || !participantValid" @click="submitParticipant">确认录入</button>
         </section>
       </div>
     </Transition>
@@ -259,9 +307,43 @@ type DetailNotice = {
   collectFields: string[]
 }
 
+type ParticipantItem = {
+  id: string
+  name: string
+  mobile: string
+  meetingId: string
+  signStatus?: '已签到' | '未签到'
+  signTime?: string
+}
+
 const route = useRoute();
 const meetingId = computed(() => String(route.params.id ?? ''));
 const meeting = computed(() => meetings.find((item) => item.id === meetingId.value));
+const isPendingMeeting = computed(() => meeting.value?.status === '待开始');
+const isRunningMeeting = computed(() => meeting.value?.status === '进行中');
+const canPublishOrUpload = computed(() => isPendingMeeting.value || isRunningMeeting.value);
+const canManageParticipants = computed(() => isPendingMeeting.value);
+const canFullyEdit = computed(() => isPendingMeeting.value);
+const stateTipTone = computed(() => {
+  if (isPendingMeeting.value) return 'pending';
+  if (isRunningMeeting.value) return 'running';
+  return 'finished';
+});
+const stateTipTitle = computed(() => {
+  if (isPendingMeeting.value) return '当前阶段：会前可编辑';
+  if (isRunningMeeting.value) return '当前阶段：会议进行中';
+  return '当前阶段：会议已结束';
+});
+const stateTipDescription = computed(() => {
+  if (isPendingMeeting.value) return '可编辑会议信息、参会人员、会议资料与通知内容。';
+  if (isRunningMeeting.value) return '仅可发布通知与上传资料，参会人员与基础信息不可编辑。';
+  return '会议已结束，当前页面仅支持查看，不可再编辑会议内容。';
+});
+const operationNote = computed(() => {
+  if (isPendingMeeting.value) return '会前：全部入口可用。';
+  if (isRunningMeeting.value) return '进行中：仅“资料上传”和“发布通知”可用。';
+  return '已结束：操作入口已禁用，仅可查看数据。';
+});
 const statusTone = computed(() => {
   if (meeting.value?.status === '待开始') return 'pending';
   if (meeting.value?.status === '进行中') return 'running';
@@ -277,11 +359,15 @@ const materialList = ref(
     .map((item) => ({ ...item })),
 );
 
-const participantList = ref(
+const participantList = ref<ParticipantItem[]>(
   participants
     .filter((item) => item.meetingId === meetingId.value)
     .map((item) => ({ ...item })),
 );
+const activeSignTab = ref<'signed' | 'unsigned'>('signed');
+const signedParticipants = computed(() => participantList.value.filter((item) => item.signStatus === '已签到'));
+const unsignedParticipants = computed(() => participantList.value.filter((item) => item.signStatus !== '已签到'));
+const activeSignList = computed(() => (activeSignTab.value === 'signed' ? signedParticipants.value : unsignedParticipants.value));
 
 const noticeList = ref<DetailNotice[]>([]);
 noticeList.value = [
@@ -316,6 +402,18 @@ const filteredMaterials = computed(() => (
 const openMaterialPanel = ref(false);
 const openNoticePanel = ref(false);
 const openParticipantPanel = ref(false);
+const openMaterialPanelFn = () => {
+  if (!canPublishOrUpload.value) return;
+  openMaterialPanel.value = true;
+};
+const openNoticePanelFn = () => {
+  if (!canPublishOrUpload.value) return;
+  openNoticePanel.value = true;
+};
+const openParticipantPanelFn = () => {
+  if (!canManageParticipants.value) return;
+  openParticipantPanel.value = true;
+};
 
 const materialForm = reactive({
   category: '会议文件',
@@ -390,6 +488,7 @@ const setNoticeType = (type: 'normal' | 'receipt') => {
 };
 
 const submitMaterial = () => {
+  if (!canPublishOrUpload.value) return;
   if (!materialForm.name.trim()) return;
   materialList.value.unshift({
     id: `material-${Date.now()}`,
@@ -405,6 +504,7 @@ const submitMaterial = () => {
 };
 
 const submitNotice = () => {
+  if (!canPublishOrUpload.value) return;
   if (!noticeForm.title.trim() || !noticeForm.content.trim()) return;
   noticeList.value.unshift({
     id: `notice-${Date.now()}`,
@@ -418,12 +518,15 @@ const submitNotice = () => {
 };
 
 const submitParticipant = () => {
+  if (!canManageParticipants.value) return;
   if (!participantValid.value) return;
   participantList.value.unshift({
     id: `participant-${Date.now()}`,
     name: participantForm.name.trim(),
     mobile: participantForm.mobile.trim(),
     meetingId: meetingId.value,
+    signStatus: '未签到',
+    signTime: '',
   });
   participantForm.name = '';
   participantForm.mobile = '';
@@ -434,6 +537,7 @@ const deleteOpen = ref(false);
 const deletePayload = ref<{ type: 'material' | 'notice' | 'participant'; id: string } | null>(null);
 
 const askDelete = (type: 'material' | 'notice' | 'participant', id: string) => {
+  if (!canFullyEdit.value) return;
   deletePayload.value = { type, id };
   deleteOpen.value = true;
 };
@@ -555,6 +659,37 @@ const confirmDelete = () => {
   background: #edf5ff;
 }
 
+.state-tip {
+  border-radius: 14px;
+  padding: 0.75rem 0.9rem;
+}
+
+.state-tip strong {
+  display: block;
+  font-size: 0.9rem;
+}
+
+.state-tip p {
+  margin: 0.28rem 0 0;
+  font-size: 0.82rem;
+  line-height: 1.55;
+}
+
+.state-tip.pending {
+  background: #f5f0e8;
+  color: #876740;
+}
+
+.state-tip.running {
+  background: #eaf2ff;
+  color: #2b5588;
+}
+
+.state-tip.finished {
+  background: #edf1f5;
+  color: #5f6c79;
+}
+
 .operation-card {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -572,6 +707,12 @@ const confirmDelete = () => {
   justify-items: center;
   align-content: center;
   gap: 0.35rem;
+  font-size: 0.8rem;
+}
+
+.operation-note {
+  margin: -0.35rem 0 0;
+  color: var(--text-muted);
   font-size: 0.8rem;
 }
 
@@ -599,6 +740,27 @@ const confirmDelete = () => {
 .section-head span {
   color: var(--text-muted);
   font-size: 0.8rem;
+}
+
+.sign-tabs {
+  margin-top: 0.7rem;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.45rem;
+}
+
+.sign-tabs button {
+  border: none;
+  min-height: 34px;
+  border-radius: 999px;
+  background: #eef2f5;
+  color: var(--text-muted);
+}
+
+.sign-tabs button.active {
+  background: var(--surface-soft);
+  color: var(--brand-gold-dark);
+  font-weight: 700;
 }
 
 .category-tabs {
@@ -669,6 +831,7 @@ const confirmDelete = () => {
   background: #fdeceb;
   color: #bf3e34;
 }
+
 
 .empty-text {
   margin: 0.75rem 0 0;
