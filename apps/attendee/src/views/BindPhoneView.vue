@@ -9,30 +9,47 @@
 
         <label class="field">
           <span>手机号</span>
-          <input v-model="mobile" type="tel" placeholder="请输入手机号" />
+          <input v-model="mobile" type="tel" maxlength="11" placeholder="请输入手机号" />
         </label>
 
         <label class="field">
           <span>验证码</span>
           <div class="field-row">
-            <input v-model="code" type="text" placeholder="请输入6位验证码" />
-            <button type="button" class="secondary-btn">获取验证码</button>
+            <input v-model="code" type="text" maxlength="6" placeholder="请输入6位验证码" />
+            <button type="button" class="secondary-btn" :disabled="!mobileValid">
+              {{ mobileValid ? '获取验证码' : '手机号错误' }}
+            </button>
           </div>
         </label>
 
-        <RouterLink class="primary-btn" to="/home">绑定并登录</RouterLink>
+        <p v-if="errorText" class="error">{{ errorText }}</p>
+        <button type="button" class="primary-btn" :disabled="!canSubmit" @click="onSubmit">绑定并登录</button>
       </section>
     </main>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
-import { RouterLink } from 'vue-router';
+import { computed, ref } from 'vue';
+import { useRouter } from 'vue-router';
 import AppHeader from '../components/AppHeader.vue';
 
 const mobile = ref('13800138000');
 const code = ref('864219');
+const errorText = ref('');
+const router = useRouter();
+const mobileValid = computed(() => /^1\d{10}$/.test(mobile.value));
+const codeValid = computed(() => /^\d{6}$/.test(code.value));
+const canSubmit = computed(() => mobileValid.value && codeValid.value);
+
+const onSubmit = () => {
+  if (!canSubmit.value) {
+    errorText.value = '手机号或验证码格式错误，请重新输入';
+    return;
+  }
+  errorText.value = '';
+  router.push('/home');
+};
 </script>
 
 <style scoped lang="scss">
@@ -58,7 +75,7 @@ const code = ref('864219');
 
 .card h2 {
   margin: 0;
-  color: var(--brand-navy);
+  color: #12253d;
 }
 
 .card p {
@@ -104,13 +121,25 @@ const code = ref('864219');
 }
 
 .secondary-btn {
-  background: var(--surface-soft);
-  color: var(--brand-gold-dark);
+  background: var(--wechat-green-soft);
+  color: var(--wechat-green-dark);
 }
 
 .primary-btn {
-  background: var(--brand-gold);
+  width: 100%;
+  background: var(--wechat-green);
   color: white;
   font-weight: 700;
+}
+
+.primary-btn:disabled {
+  background: #b4d8c3;
+}
+
+.error {
+  margin: 0 0 0.7rem;
+  color: var(--danger);
+  font-size: 0.8rem;
+  text-align: center;
 }
 </style>
